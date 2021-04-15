@@ -2,9 +2,6 @@ import torch
 import os
 
 
-
-
-
 class FGM:
     def __init__(self, model):
         self.model = model

@@ -32,7 +32,7 @@ def load_data(filename):
         for i, l in enumerate(f):
             l = json.loads(l)
             question.append(l['text'])
-            label.append(l['label_name'])
+            label.append(l['label'])
     return question, label
 
 
@@ -44,18 +44,6 @@ def read_news_data():
 
 
 news_train_question, news_train_label, news_valid_question, news_valid_label = read_news_data()
-
-dic = {}
-for v in news_train_label:
-    dic[v] = dic.get(v, 0) + 1
-print(dic)
-label_dic = {}
-for k, v in dic.items():
-    label_dic[k] = len(label_dic)
-print(label_dic)
-
-news_train_label = [label_dic[l] for l in news_train_label]
-news_valid_label = [label_dic[l] for l in news_valid_label]
 
 data = copy.deepcopy(news_train_question)
 data.append(news_valid_question)
@@ -97,12 +85,12 @@ train_dataset = Dataset(train_encodings, news_train_label)
 valid_dataset = Dataset(valid_encodings, news_valid_label)
 
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-
-if os.path.exists('best_model.p'):
+load_model = False
+if os.path.exists('best_model.p') and load_model:
     print('************load model************')
     model = torch.load('best_model.p')
 else:
-    model = BertForSequenceClassification.from_pretrained(model_path, num_labels=len(label_dic))
+    model = BertForSequenceClassification.from_pretrained(model_path, num_labels=15)
     model.to(device)
 model.train()
 
@@ -135,10 +123,10 @@ def train_func():
         acc = accuracy_score(labels.cpu().numpy(), output.argmax(dim=1).cpu().numpy())
         train_acc += acc
 
-        fgm.attack('embeddings.word_embeddings.weight')
+        fgm.attack(emb_name='embeddings.word_embeddings.weight')
         adv_loss = model(input_ids, attention_mask=attention_mask, labels=labels).loss
         adv_loss.backward()
-        fgm.restore('embeddings.word_embeddings.weight')
+        fgm.restore(emb_name='embeddings.word_embeddings.weight')
 
         pbar.update()
         pbar.set_description(f'loss:{loss.item():.4f}, acc:{acc:.4f}')
@@ -166,10 +154,10 @@ min_valid_loss = float('inf')
 for epoch in range(100):
     print('************start train************')
     train_loss, train_acc = train_func()
-    print(f'train loss: {train_loss:.4f}, valid_f1: {train_acc:.4f}')
+    print(f'train loss: {train_loss:.4f}, train acc: {train_acc:.4f}')
     print('************start valid************')
     valid_loss, valid_acc = test_func()
-    print(f'valid loss: {valid_loss:.4f}, valid_f1: {valid_acc:.4f}')
+    print(f'valid loss: {valid_loss:.4f}, valid acc: {valid_acc:.4f}')
 
     if min_valid_loss > valid_loss:
         min_valid_loss = valid_loss
