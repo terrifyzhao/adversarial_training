@@ -96,8 +96,8 @@ train_dataset = Dataset(train_encodings, news_train_label)
 valid_dataset = Dataset(valid_encodings, news_valid_label)
 
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-
-if os.path.exists('best_model.p'):
+load_model = False
+if os.path.exists('best_model.p') and load_model:
     print('************load model************')
     model = torch.load('best_model.p')
 else:
