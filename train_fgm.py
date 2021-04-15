@@ -8,6 +8,7 @@ from transformers import BertForSequenceClassification, AdamW
 import os
 import json
 import copy
+from adversarial import FGM
 
 
 def fix_seed(seed):
@@ -112,6 +113,8 @@ valid_loader = DataLoader(valid_dataset, batch_size=BATCH_SIZE)
 
 optim = AdamW(model.parameters(), lr=5e-5)
 
+fgm = FGM(model)
+
 
 def train_func():
     train_loss = 0
@@ -131,6 +134,11 @@ def train_func():
         optim.step()
         acc = accuracy_score(labels.cpu().numpy(), output.argmax(dim=1).cpu().numpy())
         train_acc += acc
+
+        fgm.attack('embeddings.word_embeddings.weight')
+        adv_loss = model(input_ids, attention_mask=attention_mask, labels=labels).loss
+        adv_loss.backward()
+        fgm.restore('embeddings.word_embeddings.weight')
 
         pbar.update()
         pbar.set_description(f'loss:{loss.item():.4f}, acc:{acc:.4f}')

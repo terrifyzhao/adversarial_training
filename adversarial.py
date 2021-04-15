@@ -2,18 +2,7 @@ import torch
 import os
 
 
-def fix_seed(seed):
-    import numpy as np
-    import random
-    random.seed(seed)
-    os.environ['PYTHONHASHSEED'] = str(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
-    torch.backends.cudnn.deterministic = True
 
-
-fix_seed(2021)
 
 
 class FGM:
