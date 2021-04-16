@@ -93,12 +93,12 @@ else:
     model.to(device)
 model.train()
 
-BATCH_SIZE = 1024
+BATCH_SIZE = 512
 
 train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE)
 valid_loader = DataLoader(valid_dataset, batch_size=BATCH_SIZE)
 
-optim = AdamW(model.parameters(), lr=5e-5)
+optim = AdamW(model.parameters(), lr=2e-5)
 
 
 def train_func():
@@ -143,11 +143,10 @@ def test_func():
 
 
 min_valid_loss = float('inf')
-for epoch in range(100):
-    print('************start train************')
+for epoch in range(5):
+    print(f'************epoch {epoch+1}*************')
     train_loss, train_acc = train_func()
     print(f'train loss: {train_loss:.4f}, train acc: {train_acc:.4f}')
-    print('************start valid************')
     valid_loss, valid_acc = test_func()
     print(f'valid loss: {valid_loss:.4f}, valid acc: {valid_acc:.4f}')
 

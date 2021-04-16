@@ -20,7 +20,7 @@ def load_data(filename):
         for i, l in enumerate(f):
             l = json.loads(l)
             question.append(l['text'])
-            label.append(l['label'])
+            label.append(int(l['label']))
     return question, label
 
 
@@ -48,7 +48,7 @@ class Dataset(torch.utils.data.Dataset):
 
 
 dataset = Dataset(encodings, label)
-loader = DataLoader(dataset, batch_size=1024)
+loader = DataLoader(dataset, batch_size=512)
 
 acc = 0
 for batch in tqdm(loader):

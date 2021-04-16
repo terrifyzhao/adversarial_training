@@ -8,7 +8,7 @@ from transformers import BertForSequenceClassification, AdamW
 import os
 import json
 import copy
-from adversarial import FGM, FGSM
+from adversarial import PGD
 
 
 def fix_seed(seed):
@@ -101,7 +101,7 @@ valid_loader = DataLoader(valid_dataset, batch_size=BATCH_SIZE)
 
 optim = AdamW(model.parameters(), lr=2e-5)
 
-fgm = FGSM(model)
+pgd = PGD(model)
 
 
 def train_func():
@@ -125,15 +125,23 @@ def train_func():
         acc = accuracy_score(labels.cpu().numpy(), output.argmax(dim=1).cpu().numpy())
         train_acc += acc
 
-        # 添加扰动
-        fgm.attack(emb_name='embeddings.word_embeddings.weight')
-        # 重新计算梯度
-        adv_loss = model(input_ids, attention_mask=attention_mask, labels=labels).loss
-        # bp得到新的梯度
-        adv_loss.backward()
-        fgm.restore(emb_name='embeddings.word_embeddings.weight')
+        # 备份梯度
+        pgd.backup_grad()
+        k = 3
+        for i in range(k):
+            # 添加扰动
+            pgd.attack(emb_name='embeddings.word_embeddings.weight')
+            if i != k-1:
+                # 梯度清零
+                optim.zero_grad()
+            else:
+                pgd.restore_grad()
+            # bp得到新的梯度
+            adv_loss = model(input_ids, attention_mask=attention_mask, labels=labels).loss
+            adv_loss.backward()
 
-        # 更新参数
+        pgd.restore(emb_name='embeddings.word_embeddings.weight')
+
         optim.step()
 
         pbar.update()
